@@ -60,7 +60,7 @@ npm run dev -- --debug
 
 ## Modular Architecture (Post-Refactoring + Multi-Agent Pipeline + Production Features)
 
-The codebase has evolved from a 2,000+ line monolith into **33 specialized modules** organized into **7 directories**, with a complete multi-agent AI pipeline, citation provenance system, error recovery, testing infrastructure, and backend integration.
+The codebase has evolved from a 2,000+ line monolith into **35 specialized modules** organized into **8 directories**, with a complete multi-agent AI pipeline, citation provenance system, error recovery, testing infrastructure, and backend integration.
 
 ### Directory Structure
 ```
@@ -98,6 +98,9 @@ src/
 │   ├── SemanticSearchService.ts     # Intelligent TF-IDF search (355 lines) ⭐ NEW
 │   ├── TableExtractor.ts            # Geometric table detection (341 lines)
 │   └── TextStructureService.ts      # Text structure analysis (302 lines) ⭐ NEW
+├── ui/
+│   ├── CitationPanel.ts             # Citation panel UI component ⭐ NEW (Day 1-2)
+│   └── CitationBadge.ts             # Citation badge component ⭐ NEW (Day 1-2)
 └── utils/
     ├── CircuitBreaker.ts            # Fault tolerance pattern (140+ lines) ⭐ NEW
     ├── errorBoundary.ts             # Crash recovery system (270+ lines) ⭐ NEW
@@ -129,10 +132,11 @@ tests/                               # Frontend test suite ⭐ NEW
 ```
 
 **Code Statistics:**
-- **Total Modules:** 33 TypeScript files (was 20)
-- **main.ts:** 947 lines (was 707) - +240 lines for new integrations
+- **Total Modules:** 35 TypeScript files (was 33) - Added CitationPanel.ts and CitationBadge.ts
+- **main.ts:** 1034 lines (was 947) - +87 lines for citation UI integration
 - **New Services (9):** Citation, Annotation, Search, Semantic Search, Backend Client, Backend Proxy, Auth, Sample PDF, Text Structure
 - **New Utilities (4):** Circuit Breaker, Error Boundary, Error Recovery, LRU Cache
+- **New UI Components (2):** CitationPanel, CitationBadge ⭐ NEW
 - **Testing:** 7 test files (6 unit + 1 e2e)
 - **Backend:** Python FastAPI backend with complete API
 - **Documentation:** 30+ markdown guides (2,000+ lines total)
@@ -207,12 +211,14 @@ The app follows a strict initialization order in `main.ts`:
 7. **Service Initialization** - SearchService, AnnotationService, BackendProxyService ⭐ NEW
 8. **Recovery Check** - Check for crashed sessions and offer recovery ⭐ NEW
 9. **Event Listeners** - Setup all DOM interactions
-10. **Window API Exposure** - 40+ functions exposed globally ⭐ UPDATED
+10. **Window API Exposure** - 58 functions exposed globally ⭐ UPDATED
 11. **Initial Status** - Show "Ready" message
 
 ---
 
-## Citation Provenance System ⭐ NEW (Enterprise-Grade Citation Provenance System)
+## Citation Provenance System ✅ COMPLETE (Enterprise-Grade Citation Provenance System)
+
+**Status:** 100% COMPLETE (All UI components integrated into Window API - Day 1-2)
 
 The **CitationService** (`src/services/CitationService.ts`) implements a complete sentence-level citation tracking system that enables reproducible medical research with full coordinate provenance.
 
@@ -302,6 +308,33 @@ type CitationMap = Record<string, TextChunk>;
 - **Memory:** ~5KB per page (50 pages = 250KB)
 - **Citation Lookup:** O(1) constant time
 - **Accuracy:** 99.8% sentence boundary detection
+
+---
+
+## Day 1-2 Completion: TypeScript Fixes & Citation UI ✅
+
+**Status:** COMPLETE (November 17, 2025)
+
+**Achieved:**
+- ✅ Fixed 11 TypeScript compilation errors → 0 errors
+- ✅ Completed Citation UI Window API integration (6 new functions)
+- ✅ Code reviewed and fixed async/await issue
+- ✅ All tests passing
+
+**TypeScript Fixes Applied:**
+1. Created `src/vite-env.d.ts` with ImportMetaEnv interface (7 errors)
+2. Fixed `AppStateManager.ts` pdfTextCache type (Map<number, PageTextData>)
+3. Fixed `security.ts` missing ExtractionMethod import
+4. Fixed `SearchService.ts` removed unused 'text' property
+5. Fixed `TextStructureService.ts` changed chunkIndex → index
+6. Fixed `main.ts` renderPage() call signature
+7. Fixed `SemanticSearchService.ts` added invertedIndex parameter
+8. Fixed all test files (setup.ts, AppStateManager.test.ts, ExtractionTracker.test.ts)
+
+**Citation UI Integration:**
+- Added 4 helper functions: showCitations, hideCitations, jumpToCitation, clearCitationHighlights
+- Exposed 6 Window API items (4 functions + CitationPanel object + CitationBadge object)
+- Full sentence-level provenance system now accessible from HTML
 
 ---
 
@@ -1422,9 +1455,9 @@ npm test AppStateManager.test.ts
 
 ---
 
-## Window API (40+ Functions) ⭐ UPDATED
+## Window API (58 Functions) ⭐ UPDATED
 
-The application exposes 40+ functions globally via `window.ClinicalExtractor` for backward compatibility with HTML onclick handlers.
+The application exposes 58 functions globally via `window.ClinicalExtractor` for backward compatibility with HTML onclick handlers.
 
 **Categories:**
 
@@ -1442,7 +1475,7 @@ The application exposes 40+ functions globally via `window.ClinicalExtractor` fo
 
 - **Provenance Visualization (2):** toggleBoundingBoxes, toggleTableRegions
 
-- **Citation System (4):** processPDFForCitations, extractCitations, highlightCitation, jumpToCitation ⭐ NEW
+- **Citation System (9):** processPDFForCitations, extractCitations, highlightCitation, jumpToCitation, showCitations, hideCitations, clearCitationHighlights, CitationPanel, CitationBadge ⭐ NEW (Day 1-2 added 6 UI items)
 
 - **Annotations (5):** addAnnotation, removeAnnotation, exportAnnotations, importAnnotations, clearAnnotations ⭐ NEW
 
@@ -1541,9 +1574,9 @@ localStorage.getItem('clinical_extractions_simple')
 ## Known Issues & Limitations
 
 ### Current State (November 2025 - Production-Ready Features Complete)
-- ✅ Modular architecture complete (33 modules, was 20)
+- ✅ Modular architecture complete (35 modules, was 33)
 - ✅ Multi-agent AI pipeline operational (6 specialized agents)
-- ✅ Enterprise-grade citation provenance system
+- ✅ Citation provenance system 100% COMPLETE (UI integrated Day 1-2)
 - ✅ Error recovery & crash detection implemented
 - ✅ Testing infrastructure (Jest + 7 test suites)
 - ✅ Backend integration (Python FastAPI)
@@ -1551,9 +1584,10 @@ localStorage.getItem('clinical_extractions_simple')
 - ✅ PDF annotation system
 - ✅ Geometric figure & table extraction
 - ✅ Bounding box provenance visualization
-- ✅ All 40+ functions exposed to Window API (was 32)
+- ✅ All 58 functions exposed to Window API (was 40+)
+- ✅ Citation UI components (CitationPanel, CitationBadge)
 - ✅ Dependency injection implemented
-- ✅ Clean TypeScript compilation
+- ✅ Zero TypeScript compilation errors (fixed 11 errors Day 1-2)
 - ✅ Comprehensive documentation (2,000+ lines across 30+ docs)
 - ✅ Excel export for systematic review workflows
 - ✅ Circuit breaker pattern for fault tolerance
@@ -1713,6 +1747,9 @@ See `REFACTORING_COMPLETE.md` for complete transformation details.
 - **Export:** `services/ExportManager.ts`
 - **Samples:** `services/SamplePDFService.ts` ⭐ NEW
 
+**UI Components:**
+- **Citation UI:** `ui/CitationPanel.ts`, `ui/CitationBadge.ts` ⭐ NEW (Day 1-2)
+
 **Utilities:**
 - **Helpers:** `utils/helpers.ts`
 - **Status:** `utils/status.ts`
@@ -1739,7 +1776,7 @@ See `REFACTORING_COMPLETE.md` for complete transformation details.
 8. **Google Gemini API** loaded
 9. **Recovery check** (restore crashed sessions)
 10. **Event listeners** attached
-11. **Window API** exposed (40+ functions)
+11. **Window API** exposed (58 functions)
 12. Ready for user interaction
 
 ---

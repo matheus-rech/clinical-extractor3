@@ -127,7 +127,7 @@ const TextStructureService = {
                     id: currentParagraphId++,
                     sectionId: currentSection?.id ?? null,
                     text: paragraphChunks.map(c => c.text).join(' '),
-                    sentenceIndices: paragraphChunks.map(c => c.chunkIndex),
+                    sentenceIndices: paragraphChunks.map(c => c.index),
                     pageStart: paragraphChunks[0].pageNum,
                     pageEnd: paragraphChunks[paragraphChunks.length - 1].pageNum,
                     bboxUnion: TextStructureService.calculateBBoxUnion(paragraphChunks)
@@ -136,7 +136,7 @@ const TextStructureService = {
                 paragraphs.push(paragraph);
                 
                 paragraphChunks.forEach(c => {
-                    chunkIndexToParagraphId.set(c.chunkIndex, paragraph.id);
+                    chunkIndexToParagraphId.set(c.index, paragraph.id);
                 });
                 
                 if (currentSection) {

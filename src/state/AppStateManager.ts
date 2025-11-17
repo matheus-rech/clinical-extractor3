@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { AppState } from '../types';
+import type { AppState, PageTextData } from '../types';
 
 /**
  * AppStateManager - Singleton state management with observer pattern.
@@ -71,7 +71,7 @@ class AppStateManagerClass {
       totalSteps: 8,
       markdownContent: '',
       markdownLoaded: false,
-      pdfTextCache: new Map<number, { fullText: string; items: any[] }>(),
+      pdfTextCache: new Map<number, PageTextData>(),
       searchMarkers: [],
       maxCacheSize: 50,
       isProcessing: false,
@@ -224,7 +224,7 @@ class AppStateManagerClass {
       totalSteps: 8,
       markdownContent: '',
       markdownLoaded: false,
-      pdfTextCache: new Map<number, { fullText: string; items: any[] }>(),
+      pdfTextCache: new Map<number, PageTextData>(),
       searchMarkers: [],
       maxCacheSize: 50,
       isProcessing: false,

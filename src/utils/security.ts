@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { Extraction, ValidationResult } from '../types';
+import type { Extraction, ValidationResult, ExtractionMethod } from '../types';
 import { EXTRACTION_METHODS } from '../types';
 
 /**

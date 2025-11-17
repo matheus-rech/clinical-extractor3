@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 
-global.window = global.window || {};
-global.document = global.document || {};
+global.window = (global.window || {}) as any;
+global.document = (global.document || {}) as any;
 
 global.window.pdfjsLib = {
   GlobalWorkerOptions: { workerSrc: '' },

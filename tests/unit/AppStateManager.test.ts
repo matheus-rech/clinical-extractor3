@@ -20,7 +20,7 @@ describe('AppStateManager', () => {
       markdownContent: '',
       markdownLoaded: false,
       textChunks: [],
-      citationMap: new Map(),
+      citationMap: {},
       activeCitationIndex: null,
       extractedFigures: [],
       extractedTables: [],
@@ -39,11 +39,11 @@ describe('AppStateManager', () => {
 
     it('should clone Map objects correctly', () => {
       AppStateManager.setState({
-        pdfTextCache: new Map([[1, { text: 'test', page: 1 }]]),
+        pdfTextCache: new Map([[1, { fullText: 'test', items: [] }]]),
       });
 
       const state = AppStateManager.getState();
-      expect(state.pdfTextCache.get(1)).toEqual({ text: 'test', page: 1 });
+      expect(state.pdfTextCache.get(1)).toEqual({ fullText: 'test', items: [] });
     });
   });
 
