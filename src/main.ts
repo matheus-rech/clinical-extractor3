@@ -837,7 +837,7 @@ async function jumpToCitation(index: number) {
     }
 
     // Highlight the citation
-    PDFRenderer.highlightCitation(index);
+    await PDFRenderer.highlightCitation(index);
 
     StatusManager.show(`Jumped to citation [${index}] on page ${citation.pageNum}`, 'success');
 }
