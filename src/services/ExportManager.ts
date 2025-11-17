@@ -72,6 +72,13 @@ const ExportManager = {
      * - Summary sheet with form data
      * - Extractions sheet with all extraction details
      * - Statistics sheet with extraction counts
+     *
+     * ⚠️ SECURITY NOTE: xlsx package is unmaintained and has 2 HIGH-severity CVEs
+     * (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Risk is acceptable for controlled
+     * use with trusted PDFs. Migration to ExcelJS planned - see MIGRATION_TODO.md
+     *
+     * @see SECURITY.md for complete vulnerability details
+     * @see MIGRATION_TODO.md for ExcelJS migration plan
      */
     exportExcel: function() {
         const state = AppStateManager.getState();
