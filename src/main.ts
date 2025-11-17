@@ -76,6 +76,10 @@ import MemoryManager from './utils/memory';
 import { initializeErrorBoundary, triggerCrashStateSave } from './utils/errorBoundary';
 import { checkAndOfferRecovery, triggerManualRecovery } from './utils/errorRecovery';
 
+// Citation UI Components
+import { showCitationPanel, hideCitationPanel, toggleCitationPanel, updateCitationPanel } from './ui/CitationPanel';
+import { createCitationBadge, createCitationBadgeGroup, appendCitationBadgesToField } from './ui/CitationBadge';
+
 // ==================== DEPENDENCY INJECTION ====================
 
 /**
@@ -719,8 +723,8 @@ async function jumpToPage(pageNum: number) {
         StatusManager.show('No PDF loaded', 'warning');
         return;
     }
-    
-    await PDFRenderer.renderPage(state.pdfDoc, pageNum);
+
+    await PDFRenderer.renderPage(pageNum, TextSelection);
 }
 
 /**
@@ -765,10 +769,10 @@ function setAnnotationTool(tool: string) {
 function configureBackendProxy() {
     const baseURL = prompt('Enter backend API base URL:', 'https://api.example.com');
     if (!baseURL) return;
-    
+
     const timeout = parseInt(prompt('Enter timeout (ms):', '5000') || '5000');
     const retryAttempts = parseInt(prompt('Enter retry attempts:', '3') || '3');
-    
+
     BackendProxyService.configure({
         baseURL,
         timeout,
@@ -778,8 +782,72 @@ function configureBackendProxy() {
         cacheTTL: 60000,
         rateLimitPerSecond: 10
     });
-    
+
     StatusManager.show(`Backend proxy configured: ${baseURL}`, 'success');
+}
+
+// ==================== CITATION UI HELPERS ====================
+
+/**
+ * Show citations panel - wrapper that gets state and calls showCitationPanel
+ */
+function showCitations() {
+    const state = AppStateManager.getState();
+    if (!state.citationMap || !state.lastAICitations) {
+        StatusManager.show('No citations available to display', 'warning');
+        return;
+    }
+
+    showCitationPanel(
+        state.lastAICitations,
+        state.citationMap,
+        state.lastAIContext || 'AI Extraction'
+    );
+}
+
+/**
+ * Hide citations panel - calls hideCitationPanel
+ */
+function hideCitations() {
+    hideCitationPanel();
+}
+
+/**
+ * Jump to citation and highlight it using PDFRenderer
+ *
+ * @param index - Citation index to jump to
+ */
+async function jumpToCitation(index: number) {
+    const state = AppStateManager.getState();
+
+    if (!state.citationMap) {
+        StatusManager.show('No citation map available', 'warning');
+        return;
+    }
+
+    const citation = state.citationMap[index];
+    if (!citation) {
+        StatusManager.show(`Citation [${index}] not found`, 'warning');
+        return;
+    }
+
+    // Navigate to page if needed
+    if (citation.pageNum !== state.currentPage) {
+        await PDFRenderer.renderPage(citation.pageNum, TextSelection);
+    }
+
+    // Highlight the citation
+    PDFRenderer.highlightCitation(index);
+
+    StatusManager.show(`Jumped to citation [${index}] on page ${citation.pageNum}`, 'success');
+}
+
+/**
+ * Clear citation highlights using PDFRenderer
+ */
+async function clearCitationHighlights() {
+    await PDFRenderer.clearHighlights();
+    StatusManager.show('Citation highlights cleared', 'info');
 }
 
 /**
@@ -846,6 +914,25 @@ function exposeWindowAPI() {
         toggleAnnotationTools,
         setAnnotationTool,
         configureBackendProxy,
+
+        // Citation UI Functions (4)
+        showCitations,
+        hideCitations,
+        jumpToCitation,
+        clearCitationHighlights,
+
+        // Citation UI Components (2 objects)
+        CitationPanel: {
+            showCitationPanel,
+            hideCitationPanel,
+            toggleCitationPanel,
+            updateCitationPanel
+        },
+        CitationBadge: {
+            createCitationBadge,
+            createCitationBadgeGroup,
+            appendCitationBadgesToField
+        },
 
         triggerCrashStateSave,
         triggerManualRecovery
