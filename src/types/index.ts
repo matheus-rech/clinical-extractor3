@@ -179,6 +179,16 @@ export interface AppState {
    * Used for visual highlighting and scrolling
    */
   activeCitationIndex: number | null;
+  /**
+   * Citation indices from the last AI operation
+   * Used to display citation badges in UI
+   */
+  lastAICitations?: number[];
+  /**
+   * Context description for the last AI operation with citations
+   * e.g., "PICO-T Extraction", "Summary Generation"
+   */
+  lastAIContext?: string;
 
   // ==================== NEW: FIGURE & TABLE EXTRACTION 🖼️📊 ====================
   /**

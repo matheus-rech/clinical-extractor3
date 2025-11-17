@@ -26,6 +26,8 @@ import StatusManager from '../utils/status';
 import LRUCache from '../utils/LRUCache';
 import BackendClient from './BackendClient';
 import AuthManager from './AuthManager';
+import CitationService from './CitationService';
+import CitationPanel from '../ui/CitationPanel';
 
 // ==================== BACKEND CLIENT INITIALIZATION ====================
 
@@ -142,23 +144,77 @@ async function generatePICO(): Promise<void> {
     AppStateManager.setState({ isProcessing: true });
     const loadingEl = document.getElementById('pico-loading');
     if (loadingEl) loadingEl.style.display = 'block';
-    StatusManager.show('✨ Analyzing document for PICO-T summary...', 'info');
+    StatusManager.show('✨ Analyzing document for PICO-T summary with citation tracking...', 'info');
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        // Get full text of the document to provide as context
-        const documentText = await getAllPdfText();
-        if (!documentText) {
-            throw new Error("Could not read text from the PDF.");
-        }
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 NEW: Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document format');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) {
+                throw new Error("Could not read text from the PDF.");
+            }
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.generatePICO(documentId, documentText);
         const data = response; // Backend returns PICO fields directly
+
+        // 🎯 NEW: Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                // Try to extract citation indices from response
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Found ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    // Store citations in state for UI display
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'PICO-T Extraction'
+                    });
+
+                    // 🎯 DAY 5: Auto-show citation panel
+                    try {
+                        CitationPanel.showCitationPanel(
+                            aiResponse.citationIndices,
+                            state.citationMap,
+                            'PICO-T Extraction'
+                        );
+                        console.log('📚 Citation panel displayed automatically');
+                    } catch (panelError) {
+                        console.warn('⚠️ Failed to show citation panel:', panelError);
+                    }
+                } else {
+                    console.log('ℹ️ No citations found in AI response');
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations:', citationError);
+                // Continue without citations - non-critical error
+            }
+        }
 
         // Populate fields
         const populationField = document.getElementById('eligibility-population') as HTMLInputElement;
@@ -215,22 +271,60 @@ async function generateSummary(): Promise<void> {
     AppStateManager.setState({ isProcessing: true });
     const loadingEl = document.getElementById('summary-loading');
     if (loadingEl) loadingEl.style.display = 'block';
-    StatusManager.show('✨ Asking AI for summary...', 'info');
+    StatusManager.show('✨ Generating summary with citation tracking...', 'info');
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        const documentText = await getAllPdfText();
-        if (!documentText) {
-            throw new Error("Could not read text from the PDF.");
-        }
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document for summary');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) {
+                throw new Error("Could not read text from the PDF.");
+            }
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.generateSummary(documentId, documentText);
         const summaryText = response.summary; // Backend returns {summary: string}
+
+        // 🎯 Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Summary has ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'Summary Generation'
+                    });
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations from summary:', citationError);
+            }
+        }
 
         const summaryField = document.getElementById('predictorsPoorOutcomeSurgical') as HTMLTextAreaElement;
         if (summaryField) summaryField.value = summaryText;
@@ -287,22 +381,60 @@ async function validateFieldWithAI(fieldId: string): Promise<void> {
 
     AppStateManager.setState({ isProcessing: true });
     StatusManager.showLoading(true);
-    StatusManager.show(`✨ Validating claim with AI: "${claim.substring(0, 30)}..."`, 'info');
+    StatusManager.show(`✨ Validating claim with citation tracking: "${claim.substring(0, 30)}..."`, 'info');
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        const documentText = await getAllPdfText();
-        if (!documentText) {
-            throw new Error("Could not read text from PDF for validation.");
-        }
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document for validation');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) {
+                throw new Error("Could not read text from PDF for validation.");
+            }
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.validateField(documentId, fieldId, claim, documentText);
         const validation = response; // Backend returns {is_supported, quote, confidence}
+
+        // 🎯 Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Validation has ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'Field Validation'
+                    });
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations from validation:', citationError);
+            }
+        }
 
         if (validation.is_supported) {
             StatusManager.show(`✓ VALIDATED (Confidence: ${Math.round(validation.confidence * 100)}%): "${validation.quote}"`, 'success', 10000);
@@ -341,23 +473,60 @@ async function findMetadata(): Promise<void> {
     AppStateManager.setState({ isProcessing: true });
     const loadingEl = document.getElementById('metadata-loading');
     if (loadingEl) loadingEl.style.display = 'block';
-    StatusManager.show('✨ Searching for metadata...', 'info');
+    StatusManager.show('✨ Searching for metadata with citation tracking...', 'info');
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        // Get PDF text for context
-        const documentText = await getAllPdfText();
-        if (!documentText) {
-            throw new Error("Could not read text from the PDF.");
-        }
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document for metadata');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) {
+                throw new Error("Could not read text from the PDF.");
+            }
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.findMetadata(documentId, documentText);
         const data = response; // Backend returns {doi, pmid, journal, year}
+
+        // 🎯 Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Metadata has ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'Metadata Extraction'
+                    });
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations from metadata:', citationError);
+            }
+        }
 
         const doiField = document.getElementById('doi') as HTMLInputElement;
         const pmidField = document.getElementById('pmid') as HTMLInputElement;
@@ -393,21 +562,59 @@ async function handleExtractTables(): Promise<void> {
         return;
     }
 
-    if (resultsContainer) resultsContainer.innerHTML = 'Extracting tables from document... ✨';
+    if (resultsContainer) resultsContainer.innerHTML = 'Extracting tables with citation tracking... ✨';
     StatusManager.showLoading(true);
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        const documentText = await getAllPdfText();
-        if (!documentText) return;
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document for table extraction');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) return;
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.extractTables(documentId, documentText);
         const result = response; // Backend returns {tables: [...]}
+
+        // 🎯 Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Table extraction has ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'Table Extraction'
+                    });
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations from table extraction:', citationError);
+            }
+        }
 
         if (result.tables && result.tables.length > 0 && resultsContainer) {
             renderTables(result.tables, resultsContainer);
@@ -549,21 +756,59 @@ async function handleDeepAnalysis(): Promise<void> {
         return;
     }
 
-    if (resultsContainer) resultsContainer.innerHTML = 'Thinking deeply... ✨';
+    if (resultsContainer) resultsContainer.innerHTML = 'Thinking deeply with citation tracking... ✨';
     StatusManager.showLoading(true);
 
     try {
         // Ensure backend authentication
         await ensureBackendAuthenticated();
 
-        const documentText = await getAllPdfText();
-        if (!documentText) return;
-
         const documentId = state.documentName || `temp-${Date.now()}`;
 
-        // Call backend API instead of direct Gemini
+        // 🎯 Use citation-aware document if available
+        let documentText: string;
+        let useCitations = false;
+
+        if (state.textChunks && state.textChunks.length > 0 && state.citationMap) {
+            console.log('📚 Using citation-indexed document for deep analysis');
+            documentText = CitationService.formatDocumentForAI(
+                state.textChunks,
+                state.extractedFigures || [],
+                state.extractedTables || []
+            );
+            useCitations = true;
+        } else {
+            console.log('⚠️ Citations not available, using plain text');
+            const plainText = await getAllPdfText();
+            if (!plainText) return;
+            documentText = plainText;
+        }
+
+        // Call backend API with citation-aware document
         const response = await BackendClient.deepAnalysis(documentId, documentText, prompt);
         const analysisText = response.analysis; // Backend returns {analysis: string}
+
+        // 🎯 Parse citations from response if available
+        if (useCitations && state.citationMap) {
+            try {
+                const responseText = JSON.stringify(response);
+                const aiResponse = CitationService.parseAIResponseWithCitations(
+                    responseText,
+                    state.citationMap
+                );
+                
+                if (aiResponse.citationIndices.length > 0) {
+                    console.log(`✅ Deep analysis has ${aiResponse.citationIndices.length} citation(s):`, aiResponse.citationIndices);
+                    
+                    AppStateManager.setState({
+                        lastAICitations: aiResponse.citationIndices,
+                        lastAIContext: 'Deep Analysis'
+                    });
+                }
+            } catch (citationError) {
+                console.warn('⚠️ Failed to parse citations from deep analysis:', citationError);
+            }
+        }
 
         if (resultsContainer) resultsContainer.innerText = analysisText;
         StatusManager.show("Deep analysis completed (via secure backend).", "success");

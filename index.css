@@ -1,0 +1,357 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * Additional CSS Styles for Clinical Extractor
+ * 
+ * Phase 1.1 Day 3: Citation Panel Styles
+ * Nobel Prize Citation Provenance System 🏆
+ */
+
+/* ==================== CITATION PANEL ==================== */
+
+.citation-panel {
+    position: fixed;
+    right: 20px;
+    top: 100px;
+    width: 320px;
+    max-height: calc(100vh - 120px);
+    background: white;
+    border: 2px solid #0288d1;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.citation-panel-header {
+    background: linear-gradient(135deg, #0288d1, #0277bd);
+    color: white;
+    padding: 12px 16px;
+    border-bottom: 1px solid #0277bd;
+    position: relative;
+}
+
+.citation-panel-header h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.citation-context {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    font-style: italic;
+}
+
+.citation-panel-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s;
+}
+
+.citation-panel-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Citation Badge List */
+.citation-badge-list {
+    padding: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.citation-page-group {
+    margin-bottom: 12px;
+}
+
+.citation-page-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.citation-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+/* ==================== CITATION BADGES ==================== */
+
+.citation-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 0;
+    background: #0288d1;
+    color: white;
+    border: 1px solid #0277bd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.citation-badge:hover {
+    background: #0277bd;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(2, 136, 209, 0.3);
+}
+
+.citation-badge:active {
+    transform: translateY(0);
+}
+
+.citation-badge-active {
+    background: #4caf50 !important;
+    border-color: #388e3c !important;
+    animation: badgePulse 0.5s ease-in-out;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+.citation-badge-hover {
+    background: #01579b;
+}
+
+.citation-badge-error {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #f44336;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    cursor: help;
+}
+
+.citation-badge-group {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* ==================== CITATION PREVIEW ==================== */
+
+.citation-preview {
+    padding: 12px;
+    background: #f5f5f5;
+    border-top: 1px solid #e0e0e0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.citation-preview-placeholder {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    font-style: italic;
+    margin: 8px 0;
+}
+
+.citation-preview-box {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: 3px solid #0288d1;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.citation-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.citation-preview-header strong {
+    color: #0288d1;
+    font-size: 13px;
+}
+
+.citation-preview-page {
+    background: #e3f2fd;
+    color: #0277bd;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.citation-preview-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #333;
+    margin: 0;
+    padding: 8px;
+    background: #fafafa;
+    border-radius: 4px;
+    font-style: italic;
+}
+
+.citation-preview-footer {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+    text-align: right;
+}
+
+.citation-preview-footer small {
+    color: #999;
+    font-size: 11px;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 1200px) {
+    .citation-panel {
+        width: 280px;
+        right: 10px;
+        top: 80px;
+    }
+}
+
+@media (max-width: 768px) {
+    .citation-panel {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        top: auto;
+        width: 100%;
+        max-height: 50vh;
+        border-radius: 8px 8px 0 0;
+    }
+}
+
+/* ==================== SCROLLBAR STYLING ==================== */
+
+.citation-badge-list::-webkit-scrollbar,
+.citation-preview::-webkit-scrollbar {
+    width: 6px;
+}
+
+.citation-badge-list::-webkit-scrollbar-track,
+.citation-preview::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.citation-badge-list::-webkit-scrollbar-thumb,
+.citation-preview::-webkit-scrollbar-thumb {
+    background: #0288d1;
+    border-radius: 3px;
+}
+
+.citation-badge-list::-webkit-scrollbar-thumb:hover,
+.citation-preview::-webkit-scrollbar-thumb:hover {
+    background: #0277bd;
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+.citation-badge:focus {
+    outline: 2px solid #0288d1;
+    outline-offset: 2px;
+}
+
+.citation-panel-close:focus {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+    .citation-panel {
+        display: none !important;
+    }
+    
+    .citation-badge {
+        background: none;
+        color: #0288d1;
+        border: 1px solid #0288d1;
+        padding: 1px 4px;
+    }
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.citation-highlight {
+    background: rgba(255, 235, 59, 0.4) !important;
+    border: 2px solid #fbc02d;
+    animation: highlightFade 2s ease-in-out;
+}
+
+@keyframes highlightFade {
+    0% {
+        background: rgba(255, 235, 59, 0.8);
+    }
+    100% {
+        background: rgba(255, 235, 59, 0.4);
+    }
+}
+
+.citation-loading {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+}
+
+.citation-empty-state {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+}
+
+.citation-empty-state svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    opacity: 0.3;
+}

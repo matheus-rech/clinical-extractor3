@@ -427,6 +427,141 @@ export const PDFRenderer = {
         PDFRenderer.showTableRegions = false;
 
         console.log('PDFRenderer cleanup completed');
+    },
+
+    /**
+     * Highlight a citation on the PDF
+     * Phase 1.1 Day 4: Citation Provenance System 🏆
+     * 
+     * @param citationIndex - The citation index to highlight
+     * 
+     * Process:
+     * 1. Retrieves citation from map
+     * 2. Navigates to page if needed
+     * 3. Waits for render to complete
+     * 4. Draws yellow highlight rectangle over citation bbox
+     * 5. Scrolls citation into view
+     */
+    highlightCitation: async (citationIndex: number) => {
+        const state = AppStateManager.getState();
+        
+        if (!state.citationMap) {
+            console.warn('⚠️ Citation map not available');
+            return;
+        }
+
+        const citation = state.citationMap[citationIndex];
+        
+        if (!citation) {
+            console.warn(`⚠️ Citation [${citationIndex}] not found in map`);
+            return;
+        }
+        
+        console.log(`🎯 Highlighting citation [${citationIndex}] on page ${citation.pageNum}`);
+        
+        // Store current citation in state
+        AppStateManager.setState({ activeCitationIndex: citationIndex });
+        
+        // Navigate to page if not already there
+        const needsNavigation = state.currentPage !== citation.pageNum;
+        
+        if (needsNavigation) {
+            // Need to import TextSelection here - will be passed via window
+            const TextSelection = (window as any).TextSelection;
+            if (TextSelection) {
+                await PDFRenderer.renderPage(citation.pageNum, TextSelection);
+            } else {
+                console.warn('⚠️ TextSelection module not available');
+                return;
+            }
+        }
+        
+        // Wait for render to complete, then highlight
+        setTimeout(() => {
+            const canvas = PDFRenderer.currentCanvas;
+            if (!canvas) {
+                console.warn('⚠️ Canvas not found for highlighting');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            
+            // Draw yellow highlight rectangle
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 235, 59, 0.4)';
+            ctx.strokeStyle = '#fbc02d';
+            ctx.lineWidth = 2;
+            
+            const bbox = citation.bbox;
+            
+            ctx.fillRect(
+                bbox.x,
+                bbox.y,
+                bbox.width,
+                bbox.height
+            );
+            
+            ctx.strokeRect(
+                bbox.x,
+                bbox.y,
+                bbox.width,
+                bbox.height
+            );
+            
+            ctx.restore();
+            
+            console.log('✅ Citation highlighted at', bbox);
+            
+            // Scroll to citation
+            PDFRenderer.scrollToCitation(bbox);
+        }, needsNavigation ? 500 : 100); // Wait longer if navigating to new page
+    },
+    
+    /**
+     * Clear all citation highlights
+     * Re-renders the current page to remove overlay graphics
+     */
+    clearHighlights: async () => {
+        const state = AppStateManager.getState();
+        
+        // Clear active citation
+        AppStateManager.setState({ activeCitationIndex: null });
+        
+        // Re-render current page without highlights
+        if (state.currentPage && state.pdfDoc) {
+            const TextSelection = (window as any).TextSelection;
+            if (TextSelection) {
+                await PDFRenderer.renderPage(state.currentPage, TextSelection);
+            }
+        }
+        
+        console.log('✅ Citation highlights cleared');
+    },
+    
+    /**
+     * Scroll citation into view with smooth animation
+     * 
+     * @param bbox - Bounding box of the citation
+     */
+    scrollToCitation: (bbox: { x: number; y: number; width: number; height: number }) => {
+        const container = document.getElementById('pdf-container');
+        if (!container) {
+            console.warn('⚠️ PDF container not found for scrolling');
+            return;
+        }
+        
+        // Calculate scroll position (center citation in view)
+        const containerHeight = container.clientHeight;
+        const scrollTop = bbox.y - (containerHeight / 2) + (bbox.height / 2);
+        
+        // Smooth scroll to citation
+        container.scrollTo({
+            top: Math.max(0, scrollTop),
+            behavior: 'smooth'
+        });
+        
+        console.log(`✅ Scrolled to citation at y=${bbox.y}`);
     }
 };
 
